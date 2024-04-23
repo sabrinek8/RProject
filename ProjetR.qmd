@@ -1,0 +1,339 @@
+---
+title: "ProjetR"
+format: html
+editor: visual
+---
+
+## Introduction :
+
+Nous avons sélectionné le jeu de données "Superket sales" \[1\] pour ce projet afin de procéder à l'analyse, à la visualisation et à la prédiction des données.
+
+#### Informations sur les attributs :
+
+-   Invoice id : Numéro d'identification de la facture de vente générée par ordinateur
+
+-   Branch: Succursale du supercentre (3 succursales disponibles identifiées par A, B et C)
+
+-   City: Emplacement des supercentres
+
+-   Customer type : Type de clients, enregistré par Membres pour les clients utilisant la carte de membre et Normal pour ceux sans carte de membre
+
+-   Gender : Genre du client
+
+-   Product line : Groupes de catégorisation générale des articles - Accessoires électroniques, Accessoires de mode, Aliments et boissons, Santé et beauté, Maison et style de vie, Sports et voyages
+
+-   Unit price : Prix de chaque produit en \$
+
+-   Quantity : Nombre de produits achetés par le client
+
+-   Tax: Frais de taxe de 5 % pour les clients qui achètent
+
+-   Total : Prix total incluant la taxe
+
+-   Date : Date d'achat (Enregistrée de janvier 2019 à mars 2019)
+
+-   Time: Heure d'achat (de 10h à 21h)
+
+-   Payment: Mode de paiement utilisé par le client pour l'achat (3 méthodes disponibles - Espèces, Carte de crédit et Ewallet)
+
+-   COGS : Coût des marchandises vendues
+
+-   Gross margin percentage : Pourcentage de marge brute
+
+-   Gross income : Revenu brut
+
+-   Rating: Note de stratification du client sur son expérience d'achat globale (Sur une échelle de 1 à 10)
+
+## Chargement des packages:
+
+Avant d'entamer l'analyse, nous chargerons les bibliothèques nécessaires :
+
+```{r}
+# Chargement des packages
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+
+
+
+
+```
+
+## Collecte des Données :
+
+```{r}
+library(readr)
+supermarket_sales <- read_csv("C:/Users/Sabrine/Downloads/archive/supermarket_sales - Sheet1.csv",
+                              col_types = cols(
+                                `Invoice ID` = col_character(),
+                                Branch = col_character(),
+                                City = col_character(),
+                                `Customer type` = col_character(),
+                                Gender = col_character(),
+                                `Product line` = col_character(),
+                                Date = col_character(),
+                                Payment = col_character(),
+                                `Unit price` = col_double(),
+                                Quantity = col_double(),
+                                `Tax 5%` = col_double(),
+                                Total = col_double(),
+                                cogs = col_double(),
+                                `gross margin percentage` = col_double(),
+                                `gross income` = col_double(),
+                                Rating = col_double(),
+                                Time = col_time(format = "")
+                              )
+)
+View(supermarket_sales)
+
+```
+
+## **Nettoyage des Données :**
+
+Après l'affichage des premières lignes des données, on constate que que ces dernières sont soigneusement nettoyées et prêtes à être utilisées. Voici la commande utilisée pour afficher les premières lignes du jeu de données **`supermarket_sales`** :
+
+```{r}
+head(supermarket_sales)
+```
+
+les dimensions des données sont (1000 lignes et 18 colonnes)
+
+```{r}
+dim(supermarket_sales)
+```
+
+Résumé statistique des donnée
+
+```{r}
+summary(supermarket_sales)
+
+```
+
+Pour gérer les valeurs manquantes, nous allons vérifier les colonnes des ensembles de données. Si nous trouvons des données manquantes dans les colonnes, cela génère des valeurs NA en sortie, ce qui peut ne pas être bon pour chaque modèle. Nous allons donc vérifier cela en utilisant la méthode `mean()`pour chaque colonne numérique.
+
+```{r}
+mean(supermarket_sales$`Unit price`)
+```
+
+```{r}
+mean(supermarket_sales$Quantity)
+```
+
+```{r}
+mean(supermarket_sales$`Tax 5%`)
+```
+
+```{r}
+mean(supermarket_sales$Total)
+```
+
+```{r}
+mean(supermarket_sales$cogs)
+```
+
+```{r}
+mean(supermarket_sales$`gross margin percentage`)
+```
+
+```{r}
+mean(supermarket_sales$`gross income`)
+```
+
+```{r}
+mean(supermarket_sales$Rating)
+```
+
+=\> On constate qu'il n' y a pas de <NA> dans les colonnes numériques
+
+On Vérifie les valeurs uniques dans une colonne spécifique pour traiter les cas ou les données sont écrites dans différent format:
+
+```{r}
+unique(supermarket_sales$City)
+
+```
+
+```{r}
+unique(supermarket_sales$Branch)
+
+```
+
+```{r}
+unique(supermarket_sales$Gender)
+
+```
+
+```{r}
+unique(supermarket_sales$`Customer type`)
+
+```
+
+```{r}
+unique(supermarket_sales$`Product line`)
+
+```
+
+```{r}
+unique(supermarket_sales$Payment)
+
+```
+
+## **Analyse des Données :**
+
+### **Analyses de séries chronologiques :**
+
+1\. Visualisation de la série chronologique des ventes totales au fil du temps :
+
+```{r}
+library(ggplot2)
+
+# Convertir la colonne Date en format Date
+supermarket_sales$Date <- as.Date(supermarket_sales$Date, format = "%m/%d/%Y")
+
+# Créer un graphique de la série chronologique des ventes totales
+ggplot(supermarket_sales, aes(x = Date, y = Total)) +
+  geom_line() +
+  labs(title = "Ventes totales au fil du temps", x = "Date", y = "Ventes totales")
+```
+
+### **Analyse statistique**
+
+a.  Analyse de série temporelle
+
+```{r}
+# Convertir la colonne 'Date' en format Date
+supermarket_sales$Date <- as.Date(supermarket_sales$Date, format = "%m/%d/%Y")
+
+# Aggréger les ventes par date
+sales_time_series <- supermarket_sales %>%
+  group_by(Date) %>%
+  summarise(Total_Sales = sum(Total))
+
+# Afficher la série temporelle
+ggplot(sales_time_series, aes(x = Date, y = Total_Sales)) +
+  geom_line() +
+  labs(title = "Ventes totales au fil du temps",
+       x = "Date",
+       y = "Ventes totales")
+
+```
+
+**=\>La série temporelle montre une tendance générale des ventes au fil du temps.**
+
+b\. Corrélations entre différentes variables économiques
+
+```{r}
+# Calculer les corrélations
+numerics <- select(supermarket_sales, -c(`Invoice ID`, Branch, City, Payment, Time,`Customer type`,`Gender`,`Product line`,`Date`))
+correlation_matrix <- cor(numerics)
+# Calculate standard deviation for each column
+standard_deviations <- sapply(numerics, sd)
+
+# Exclude variables with zero standard deviation
+non_zero_std_variables <- numerics[, standard_deviations != 0]
+
+# Calculate correlations
+correlation_matrix <- cor(non_zero_std_variables)
+
+# Display correlation matrix
+print(correlation_matrix)
+
+```
+
+**=\>La matrice de corrélation révéle des relations entre différentes variables économiques**
+
+c\. Modèle économétrique (exemple: régression linéaire)
+
+```{r}
+# Exemple de modèle économétrique simple (régression linéaire)
+model <- lm(Total ~ Quantity + `Unit price` + `Tax 5%` + Rating, data = supermarket_sales)
+
+# Afficher le résumé du modèle
+summary(model)
+
+```
+
+**=\>Le modèle économétrique peut être utilisé pour prédire les ventes en fonction d'autres variables**
+
+## Visualisation des données
+
+a\. Histogramme des évaluations (Ratings)
+
+```{r}
+ggplot(supermarket_sales, aes(x = Rating)) +
+  geom_histogram(fill = "skyblue", color = "black", bins = 20) +
+  labs(title = "Répartition des évaluations",
+       x = "Évaluation",
+       y = "Fréquence")
+
+```
+
+b\. Boxplot de la vente totale par type de client
+
+```{r}
+ggplot(supermarket_sales, aes(x = `Customer type`, y = Total, fill = `Customer type`)) +
+  geom_boxplot() +
+  labs(title = "Vente totale par type de client",
+       x = "Type de client",
+       y = "Vente totale")
+
+```
+
+c\. Diagramme à barres pour montrer la répartition des ventes par ligne de produit
+
+```{r}
+ggplot(supermarket_sales, aes(x = `Product line`, fill = `Product line`)) +
+  geom_bar() +
+  labs(title = "Répartition des ventes par ligne de produit", x = "Ligne de produit", y = "Total des ventes") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r}
+library(lubridate)
+
+# Extraire le mois de la colonne Date
+supermarket_sales$Month <- month(supermarket_sales$Date)
+
+# Créer un graphique de la tendance des ventes mensuelles
+ggplot(supermarket_sales, aes(x = Month, y = Total)) +
+  geom_boxplot() +
+  labs(title = "Tendance des ventes mensuelles", x = "Mois", y = "Total des ventes")
+
+```
+
+## Prédiction
+
+```{r}
+# Sélectionner les variables pour la prédiction (par exemple, 'Total' comme variable cible et d'autres variables comme prédicteurs)
+prediction_data <- select(supermarket_sales, Total, Quantity, `Unit price`, Rating)
+
+# Définir la taille de l'ensemble d'entraînement
+train_size <- 0.8 * nrow(prediction_data)
+
+# Créer un index aléatoire pour l'ensemble d'entraînement
+set.seed(123) # Pour la reproductibilité
+train_index <- sample(seq_len(nrow(prediction_data)), size = train_size)
+
+# Séparer les données en ensembles d'entraînement et de test
+train_data <- prediction_data[train_index, ]
+test_data <- prediction_data[-train_index, ]
+
+# Créer le modèle de régression linéaire
+lm_model <- lm(Total ~ ., data = train_data)
+
+# Faire des prédictions sur l'ensemble de test
+predictions <- predict(lm_model, newdata = test_data)
+
+# Évaluer les performances du modèle (par exemple, erreur quadratique moyenne)
+mse <- mean((test_data$Total - predictions)^2)
+rmse <- sqrt(mse)
+print(paste("Root Mean Squared Error (RMSE):", rmse))
+
+```
+
+=\>85 est proche à 100 donc le modèle est bon
+
+## Sitographie :
+
+\[1\]"Supermarket sales**"** sur [*https://www.kaggle.com/datasets/aungpyaeap/supermarket-sales*](https://www.kaggle.com/datasets/aungpyaeap/supermarket-sales) (consulté le 20/3/2024)
